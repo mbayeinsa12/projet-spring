@@ -5,13 +5,14 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Ajouter un Étudiant</title>
+    <title>Modifier un Étudiant</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
 <div class="container mt-4">
-    <h1 class="mb-4">Ajouter un Étudiant</h1>
-    <form:form action="${pageContext.request.contextPath}/etudiants/save" method="post" modelAttribute="etudiant">
+    <h1 class="mb-4">Modifier un Étudiant</h1>
+    <form:form action="${pageContext.request.contextPath}/etudiants/update" method="post" modelAttribute="etudiant">
+        <form:hidden path="id"/> <%-- Hidden field for ID --%>
         <div class="mb-3">
             <label for="nom" class="form-label">Nom:</label>
             <form:input path="nom" class="form-control" id="nom" required="true"/>
@@ -35,12 +36,14 @@
             <label for="coursInscrits" class="form-label">Cours Inscrits:</label>
             <select multiple class="form-select" id="coursInscrits" name="coursIds">
                 <c:forEach var="cours" items="${allCours}">
-                    <option value="${cours.id}">${cours.titre}</option>
+                    <option value="${cours.id}"
+                            <c:if test="${etudiant.coursInscrits.contains(cours)}">selected</c:if>
+                    >${cours.titre}</option>
                 </c:forEach>
             </select>
             <div class="form-text">Sélectionnez plusieurs cours en maintenant Ctrl (ou Cmd) enfoncé.</div>
         </div>
-        <button type="submit" class="btn btn-success">Enregistrer</button>
+        <button type="submit" class="btn btn-success">Mettre à jour</button>
         <a href="<c:url value='/etudiants/list'/>" class="btn btn-secondary">Annuler</a>
     </form:form>
 </div>

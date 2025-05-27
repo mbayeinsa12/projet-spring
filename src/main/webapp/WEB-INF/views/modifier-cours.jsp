@@ -1,22 +1,30 @@
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
+<!DOCTYPE html>
 <html>
-<head><title>Cours</title></head>
+<head>
+  <meta charset="UTF-8">
+  <title>Modifier un Cours</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
 <body>
-<h1>${titre}</h1>
-<%--@elvariable id="cours" type="aj"--%>
-<form:form action="${action}" method="post" modelAttribute="cours">
-  <form:hidden path="id" />
-  <label>Nom :</label>
-  <form:input path="nom" /><br>
-
-  <label>Filière :</label>
-  <form:select path="filiere.id">
-    <form:options items="${filieres}" itemValue="id" itemLabel="nom" />
-  </form:select><br>
-
-  <button type="submit">Enregistrer</button>
-</form:form>
-<a href="${pageContext.request.contextPath}/cours">Retour</a>
+<div class="container mt-4">
+  <h1 class="mb-4">Modifier un Cours</h1>
+  <form:form action="${pageContext.request.contextPath}/cours/update" method="post" modelAttribute="cours">
+    <form:hidden path="id"/>
+    <div class="mb-3">
+      <label for="titre" class="form-label">Titre:</label>
+      <form:input path="titre" class="form-control" id="titre" required="true"/>
+    </div>
+    <div class="mb-3">
+      <label for="credit" class="form-label">Crédit:</label>
+      <form:input type="number" path="credit" class="form-control" id="credit" required="true"/>
+    </div>
+    <button type="submit" class="btn btn-success">Mettre à jour</button>
+    <a href="<c:url value='/cours/list'/>" class="btn btn-secondary">Annuler</a>
+  </form:form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

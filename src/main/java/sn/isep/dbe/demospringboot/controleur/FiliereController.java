@@ -1,66 +1,60 @@
 package sn.isep.dbe.demospringboot.controleur;
 
+import sn.isep.dbe.demospringboot.models.Filiere;
+import sn.isep.dbe.demospringboot.service.FiliereService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import sn.isep.dbe.demospringboot.models.Filiere;
-import sn.isep.dbe.demospringboot.service.FiliereService;
 
 import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/filieres")
 public class FiliereController {
 
-    private final FiliereService filiereService;
+    @Autowired
+    private FiliereService filiereService;
 
-    public FiliereController(FiliereService filiereService) {
-        this.filiereService = filiereService;
-    }
-
-    @GetMapping
+    @GetMapping("/list")
     public String listFilieres(Model model) {
-        List<Filiere> filieres = filiereService.getFilieres();
+        List<Filiere> filieres = filiereService.getAllFilieres();
         model.addAttribute("filieres", filieres);
-        return "filieres/list";
+        return "list-filiere";
     }
 
-    @GetMapping("/new")
+    @GetMapping("/add")
     public String showAddForm(Model model) {
         model.addAttribute("filiere", new Filiere());
-        return "filieres/add";
+        return "ajout-filiere";
     }
 
     @PostMapping("/save")
-    public String saveFiliere(@ModelAttribute Filiere filiere) {
-        filiereService.createFiliere(filiere);
-        return "redirect:/filieres";
+    public String saveFiliere(@ModelAttribute("filiere") Filiere filiere) {
+        filiereService.saveFiliere(filiere);
+        return "redirect:/filieres/list";
     }
 
     @GetMapping("/edit/{id}")
-    public String showEditForm(@PathVariable Integer id, Model model) {
-        Filiere filiere = filiereService.getFiliereById(id)
-                .orElseThrow(() -> new IllegalArgumentException("ID filière invalide: " + id));
-        model.addAttribute("filiere", filiere);
-        return "filieres/edit";
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Optional<Filiere> filiere = filiereService.getFiliereById(id);
+        if (filiere.isPresent()) {
+            model.addAttribute("filiere", filiere.get());
+            return "modifier-filiere";
+        }
+        return "redirect:/filieres/list";
     }
 
-    @PostMapping("/update/{id}")
-    public String updateFiliere(@PathVariable Integer id, @ModelAttribute Filiere filiere) {
-        filiereService.updateFiliere(id, filiere);
-        return "redirect:/filieres";
+    @PostMapping("/update") // Use update for submission from edit form
+    public String updateFiliere(@ModelAttribute("filiere") Filiere filiere) {
+        filiereService.saveFiliere(filiere); // save will update if ID exists
+        return "redirect:/filieres/list";
     }
 
-    @GetMapping("/delete/{id}")
-    public String deleteFiliere(@PathVariable Integer id) {
+    @PostMapping("/delete/{id}")
+    public String deleteFiliere(@PathVariable Long id) {
         filiereService.deleteFiliere(id);
-        return "redirect:/filieres";
-    }
-
-    @GetMapping("/search")
-    public String searchFilieres(@RequestParam String nom, Model model) {
-        List<Filiere> filieres = filiereService.searchByNom(nom);
-        model.addAttribute("filieres", filieres);
-        return "filieres/list";
+        return "redirect:/filieres/list";
     }
 }

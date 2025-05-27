@@ -1,100 +1,99 @@
 package sn.isep.dbe.demospringboot.controleur;
 
+import sn.isep.dbe.demospringboot.models.Note;
+import sn.isep.dbe.demospringboot.models.Etudiant;
+import sn.isep.dbe.demospringboot.models.Cours;
+import sn.isep.dbe.demospringboot.service.NoteService;
+import sn.isep.dbe.demospringboot.service.EtudiantService;
+import sn.isep.dbe.demospringboot.service.CoursService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import sn.isep.dbe.demospringboot.models.*;
-import sn.isep.dbe.demospringboot.service.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/notes")
 public class NoteController {
 
-    private final NoteService noteService;
-    private final EtudiantService etudiantService;
-    private final CoursService coursService;
+    @Autowired
+    private NoteService noteService;
+    @Autowired
+    private EtudiantService etudiantService;
+    @Autowired
+    private CoursService coursService;
 
-    public NoteController(NoteService noteService,
-                          EtudiantService etudiantService,
-                          CoursService coursService) {
-        this.noteService = noteService;
-        this.etudiantService = etudiantService;
-        this.coursService = coursService;
-    }
-
-    @GetMapping
+    @GetMapping("/list")
     public String listNotes(Model model) {
         List<Note> notes = noteService.getAllNotes();
         model.addAttribute("notes", notes);
-        return "notes/list";
+        return "list-note";
     }
 
-    @GetMapping("/new")
+    @GetMapping("/add")
     public String showAddForm(Model model) {
-        List<Etudiant> etudiants = etudiantService.getEtudiants();
-        List<Cours> cours = coursService.getAllCours();
-
         model.addAttribute("note", new Note());
-        model.addAttribute("etudiants", etudiants);
-        model.addAttribute("cours", cours);
-        return "notes/add";
+        model.addAttribute("etudiants", etudiantService.getAllEtudiants());
+        model.addAttribute("coursList", coursService.getAllCours());
+        return "ajout-note";
     }
 
     @PostMapping("/save")
-    public String saveNote(@ModelAttribute Note note) {
-        noteService.createNote(note);
-        return "redirect:/notes";
+    public String saveNote(@ModelAttribute("note") Note note,
+                           @RequestParam("etudiantId") Long etudiantId,
+                           @RequestParam("coursId") Long coursId) {
+        Optional<Etudiant> etudiantOpt = etudiantService.getEtudiantById(etudiantId);
+        Optional<Cours> coursOpt = coursService.getCoursById(coursId);
+
+        if (etudiantOpt.isPresent() && coursOpt.isPresent()) {
+            note.setEtudiant(etudiantOpt.get());
+            note.setCours(coursOpt.get());
+            noteService.saveNote(note);
+        } else {
+            // Handle error, e.g., redirect with an error message
+            return "redirect:/notes/add?error=true";
+        }
+        return "redirect:/notes/list";
     }
 
     @GetMapping("/edit/{id}")
-    public String showEditForm(@PathVariable Integer id, Model model) {
-        Note note = noteService.getAllNotes().stream()
-                .filter(n -> n.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("ID note invalide: " + id));
-
-        List<Etudiant> etudiants = etudiantService.getEtudiants();
-        List<Cours> cours = coursService.getAllCours();
-
-        model.addAttribute("note", note);
-        model.addAttribute("etudiants", etudiants);
-        model.addAttribute("cours", cours);
-        return "notes/edit";
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Optional<Note> note = noteService.getNoteById(id);
+        if (note.isPresent()) {
+            model.addAttribute("note", note.get());
+            model.addAttribute("etudiants", etudiantService.getAllEtudiants());
+            model.addAttribute("coursList", coursService.getAllCours());
+            return "modifier-note";
+        }
+        return "redirect:/notes/list";
     }
 
-    @PostMapping("/update/{id}")
-    public String updateNote(@PathVariable Integer id, @ModelAttribute Note note) {
-        noteService.updateNote(id, note);
-        return "redirect:/notes";
+    @PostMapping("/update")
+    public String updateNote(@ModelAttribute("note") Note note,
+                             @RequestParam("etudiantId") Long etudiantId,
+                             @RequestParam("coursId") Long coursId) {
+        Optional<Etudiant> etudiantOpt = etudiantService.getEtudiantById(etudiantId);
+        Optional<Cours> coursOpt = coursService.getCoursById(coursId);
+        Optional<Note> existingNoteOpt = noteService.getNoteById(note.getId());
+
+        if (existingNoteOpt.isPresent() && etudiantOpt.isPresent() && coursOpt.isPresent()) {
+            Note existingNote = existingNoteOpt.get();
+            existingNote.setValeur(note.getValeur());
+            existingNote.setEtudiant(etudiantOpt.get());
+            existingNote.setCours(coursOpt.get());
+            noteService.saveNote(existingNote);
+        } else {
+            // Handle error
+            return "redirect:/notes/edit/" + note.getId() + "?error=true";
+        }
+        return "redirect:/notes/list";
     }
 
-    @GetMapping("/delete/{id}")
-    public String deleteNote(@PathVariable Integer id) {
+    @PostMapping("/delete/{id}")
+    public String deleteNote(@PathVariable Long id) {
         noteService.deleteNote(id);
-        return "redirect:/notes";
-    }
-
-    @GetMapping("/byEtudiant/{etudiantId}")
-    public String getNotesByEtudiant(@PathVariable Integer etudiantId, Model model) {
-        List<Note> notes = noteService.getNotesByEtudiant(etudiantId);
-        Etudiant etudiant = etudiantService.getEtudiantById(etudiantId)
-                .orElseThrow(() -> new IllegalArgumentException("ID étudiant invalide: " + etudiantId));
-
-        model.addAttribute("notes", notes);
-        model.addAttribute("etudiant", etudiant);
-        return "notes/byEtudiant";
-    }
-
-    @GetMapping("/byCours/{coursId}")
-    public String getNotesByCours(@PathVariable Integer coursId, Model model) {
-        List<Note> notes = noteService.getNotesByCours(coursId);
-        Cours cours = coursService.getCoursById(coursId)
-                .orElseThrow(() -> new IllegalArgumentException("ID cours invalide: " + coursId));
-
-        model.addAttribute("notes", notes);
-        model.addAttribute("cours", cours);
-        return "notes/byCours";
+        return "redirect:/notes/list";
     }
 }
